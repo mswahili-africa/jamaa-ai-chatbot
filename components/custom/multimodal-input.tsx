@@ -24,12 +24,21 @@ const suggestedActions = [
   },
 ];
 
+const accessKeyId = process.env.ACCESS_KEY_ID_AWS;
+const secretAccessKey = process.env.SECRET_ACCESS_KEY_AWS;
+
+console.log("accessKeyId--"+accessKeyId)
+
+if (!accessKeyId || !secretAccessKey) {
+  throw new Error("AWS credentials are not defined in environment variables.");
+}
+
 // Configure AWS S3 Client
 const s3Client = new S3Client({
   region: "eu-west-1",
   credentials: {
-    accessKeyId: process.env.ACCESS_KEY_ID_AWS,
-    secretAccessKey: process.env.SECRET_ACCESS_KEY_AWS,
+    accessKeyId, // This is now guaranteed to be a string
+    secretAccessKey, // This is now guaranteed to be a string
   },
 });
 
