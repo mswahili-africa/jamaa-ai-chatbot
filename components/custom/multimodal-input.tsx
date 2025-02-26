@@ -1,10 +1,19 @@
 "use client";
 
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { motion } from "framer-motion";
-import React, { useRef, useEffect, useState, useCallback, Dispatch, SetStateAction, ChangeEvent } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+  ChangeEvent,
+} from "react";
 import { toast } from "sonner";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import useWindowSize from "./use-window-size";
@@ -24,21 +33,12 @@ const suggestedActions = [
   },
 ];
 
-const accessKeyId = process.env.ACCESS_KEY_ID_AWS;
-const secretAccessKey = process.env.SECRET_ACCESS_KEY_AWS;
-
-console.log("accessKeyId--"+accessKeyId)
-
-if (!accessKeyId || !secretAccessKey) {
-  throw new Error("AWS credentials are not defined in environment variables.");
-}
-
 // Configure AWS S3 Client
 const s3Client = new S3Client({
-  region: "eu-west-1",
+  region: process.env.NEXT_PUBLIC_AWS_REGION || "eu-west-1",
   credentials: {
-    accessKeyId, // This is now guaranteed to be a string
-    secretAccessKey, // This is now guaranteed to be a string
+    accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY || "",
   },
 });
 
@@ -75,7 +75,9 @@ export function MultimodalInput({
   const { width } = useWindowSize();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
+  // Adjust textarea height based on content
   useEffect(() => {
     adjustHeight();
   }, [input]);
@@ -91,10 +93,11 @@ export function MultimodalInput({
     setInput(event.target.value);
   };
 
+  // Upload a file to S3
   const uploadFileToS3 = async (file: File) => {
     const params = {
-      Bucket: "bantu-jamaa-ia-chatbot", // Replace with your bucket name
-      Key: `uploads/${file.name}`, // Path where you want to store the file in the bucket
+      Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME || "bantu-jamaa-ia-chatbot",
+      Key: `uploads/${Date.now()}_${file.name}`, // Unique file name
       Body: file,
       ContentType: file.type,
     };
@@ -104,39 +107,49 @@ export function MultimodalInput({
       await s3Client.send(command);
 
       return {
-        url: `https://${params.Bucket}.s3.eu-west-1.amazonaws.com/${params.Key}`,
+        url: `https://${params.Bucket}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${params.Key}`,
         name: file.name,
         contentType: file.type,
       };
     } catch (error) {
-      toast.error("Failed to upload file, please try again!");
       console.error("Error uploading file:", error);
+      toast.error("Failed to upload file, please try again!");
+      return null;
     }
   };
 
+  // Handle file input change
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+
+      setIsUploading(true);
       setUploadQueue(files.map((file) => file.name));
 
       try {
         const uploadPromises = files.map((file) => uploadFileToS3(file));
         const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter((attachment) => attachment !== undefined);
+        const successfullyUploadedAttachments = uploadedAttachments.filter(
+          (attachment) => attachment !== null,
+        ) as Attachment[];
 
         setAttachments((currentAttachments) => [
           ...currentAttachments,
           ...successfullyUploadedAttachments,
         ]);
       } catch (error) {
-        console.error("Error uploading files!", error);
+        console.error("Error uploading files:", error);
+        toast.error("Failed to upload files, please try again!");
       } finally {
         setUploadQueue([]);
+        setIsUploading(false);
       }
     },
     [setAttachments],
   );
 
+  // Submit the form
   const submitForm = useCallback(() => {
     handleSubmit(undefined, {
       experimental_attachments: attachments,
@@ -150,6 +163,7 @@ export function MultimodalInput({
 
   return (
     <div className="relative w-full flex flex-col gap-4">
+      {/* Suggested Actions */}
       {messages.length === 0 && attachments.length === 0 && uploadQueue.length === 0 && (
         <div className="grid sm:grid-cols-2 gap-4 w-full md:px-0 mx-auto md:max-w-[500px]">
           {suggestedActions.map((suggestedAction, index) => (
@@ -178,6 +192,7 @@ export function MultimodalInput({
         </div>
       )}
 
+      {/* Hidden File Input */}
       <input
         type="file"
         className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"
@@ -185,8 +200,10 @@ export function MultimodalInput({
         multiple
         onChange={handleFileChange}
         tabIndex={-1}
+        disabled={isUploading || isLoading}
       />
 
+      {/* Attachments and Upload Queue */}
       {(attachments.length > 0 || uploadQueue.length > 0) && (
         <div className="flex flex-row gap-2 overflow-x-scroll">
           {attachments.map((attachment) => (
@@ -206,6 +223,7 @@ export function MultimodalInput({
         </div>
       )}
 
+      {/* Textarea for Input */}
       <Textarea
         ref={textareaRef}
         placeholder="Send a message..."
@@ -224,42 +242,46 @@ export function MultimodalInput({
             }
           }
         }}
+        disabled={isUploading || isLoading}
       />
 
-      {isLoading ? (
+      {/* Buttons */}
+      <div className="flex gap-2 absolute bottom-2 right-2">
         <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 text-white"
+          className="rounded-full p-1.5 h-fit text-white"
           onClick={(event) => {
             event.preventDefault();
-            stop();
+            fileInputRef.current?.click();
           }}
+          variant="outline"
+          disabled={isUploading || isLoading}
         >
-          <StopIcon size={14} />
+          <PaperclipIcon size={14} />
         </Button>
-      ) : (
-        <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 text-white"
-          onClick={(event) => {
-            event.preventDefault();
-            submitForm();
-          }}
-          disabled={input.length === 0 || uploadQueue.length > 0}
-        >
-          <ArrowUpIcon size={14} />
-        </Button>
-      )}
 
-      <Button
-        className="rounded-full p-1.5 h-fit absolute bottom-2 right-10 m-0.5 dark:border-zinc-700"
-        onClick={(event) => {
-          event.preventDefault();
-          fileInputRef.current?.click();
-        }}
-        variant="outline"
-        disabled={isLoading}
-      >
-        <PaperclipIcon size={14} />
-      </Button>
+        {isLoading ? (
+          <Button
+            className="rounded-full p-1.5 h-fit text-white"
+            onClick={(event) => {
+              event.preventDefault();
+              stop();
+            }}
+          >
+            <StopIcon size={14} />
+          </Button>
+        ) : (
+          <Button
+            className="rounded-full p-1.5 h-fit text-white"
+            onClick={(event) => {
+              event.preventDefault();
+              submitForm();
+            }}
+            disabled={input.length === 0 || isUploading}
+          >
+            <ArrowUpIcon size={14} />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
