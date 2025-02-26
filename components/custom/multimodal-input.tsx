@@ -2,16 +2,9 @@
 
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
 import { motion } from "framer-motion";
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  useCallback,
-  Dispatch,
-  SetStateAction,
-  ChangeEvent,
-} from "react";
+import React, { useRef, useEffect, useState, useCallback, Dispatch, SetStateAction, ChangeEvent } from "react";
 import { toast } from "sonner";
+import AWS from "aws-sdk";
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
@@ -31,6 +24,15 @@ const suggestedActions = [
     action: "What is the status of flight BA142 flying tmrw?",
   },
 ];
+
+// Configure AWS S3
+AWS.config.update({
+  region: "eu-west-1",
+  accessKeyId: process.env.ACCESS_KEY_ID_AWS,
+  secretAccessKey: process.env.SECRET_ACCESS_KEY_AWS,
+});
+
+const s3 = new AWS.S3();
 
 export function MultimodalInput({
   input,
@@ -63,80 +65,54 @@ export function MultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
   useEffect(() => {
-    if (textareaRef.current) {
-      adjustHeight();
-    }
-  }, []);
+    adjustHeight();
+  }, [input]);
 
   const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 0}px`;
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   };
 
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(event.target.value);
-    adjustHeight();
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
-
-  const submitForm = useCallback(() => {
-    handleSubmit(undefined, {
-      experimental_attachments: attachments,
-    });
-
-    setAttachments([]);
-
-    if (width && width > 768) {
-      textareaRef.current?.focus();
-    }
-  }, [attachments, handleSubmit, setAttachments, width]);
-
-  const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
+  const uploadFileToS3 = async (file: File) => {
+    const params = {
+      Bucket: "YOUR_BUCKET_NAME", // Replace with your bucket name
+      Key: `uploads/${file.name}`, // Path where you want to store the file in the bucket
+      Body: file,
+      ContentType: file.type,
+    };
 
     try {
-      const response = await fetch(`/api/files/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
-
-        return {
-          url,
-          name: pathname,
-          contentType: contentType,
-        };
-      } else {
-        const { error } = await response.json();
-        toast.error(error);
-      }
+      const data = await s3.upload(params).promise();
+      return {
+        url: data.Location,
+        name: file.name,
+        contentType: file.type,
+      };
     } catch (error) {
       toast.error("Failed to upload file, please try again!");
+      console.error("Error uploading file:", error);
     }
   };
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
-
       setUploadQueue(files.map((file) => file.name));
 
       try {
-        const uploadPromises = files.map((file) => uploadFile(file));
+        const uploadPromises = files.map((file) => uploadFileToS3(file));
         const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined,
-        );
+        const successfullyUploadedAttachments = uploadedAttachments.filter((attachment) => attachment !== undefined);
 
         setAttachments((currentAttachments) => [
           ...currentAttachments,
@@ -151,39 +127,46 @@ export function MultimodalInput({
     [setAttachments],
   );
 
+  const submitForm = useCallback(() => {
+    handleSubmit(undefined, {
+      experimental_attachments: attachments,
+    });
+    setAttachments([]);
+    
+    if (width && width > 768) {
+      textareaRef.current?.focus();
+    }
+  }, [attachments, handleSubmit, setAttachments, width]);
+
   return (
     <div className="relative w-full flex flex-col gap-4">
-      {messages.length === 0 &&
-        attachments.length === 0 &&
-        uploadQueue.length === 0 && (
-          <div className="grid sm:grid-cols-2 gap-4 w-full md:px-0 mx-auto md:max-w-[500px]">
-            {suggestedActions.map((suggestedAction, index) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0.05 * index }}
-                key={index}
-                className={index > 1 ? "hidden sm:block" : "block"}
+      {messages.length === 0 && attachments.length === 0 && uploadQueue.length === 0 && (
+        <div className="grid sm:grid-cols-2 gap-4 w-full md:px-0 mx-auto md:max-w-[500px]">
+          {suggestedActions.map((suggestedAction, index) => (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ delay: 0.05 * index }}
+              key={index}
+              className={index > 1 ? "hidden sm:block" : "block"}
+            >
+              <button
+                onClick={async () => {
+                  append({
+                    role: "user",
+                    content: suggestedAction.action,
+                  });
+                }}
+                className="border-none bg-muted/50 w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-3 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
               >
-                <button
-                  onClick={async () => {
-                    append({
-                      role: "user",
-                      content: suggestedAction.action,
-                    });
-                  }}
-                  className="border-none bg-muted/50 w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-3 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
-                >
-                  <span className="font-medium">{suggestedAction.title}</span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    {suggestedAction.label}
-                  </span>
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        )}
+                <span className="font-medium">{suggestedAction.title}</span>
+                <span className="text-zinc-500 dark:text-zinc-400">{suggestedAction.label}</span>
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       <input
         type="file"
@@ -199,7 +182,6 @@ export function MultimodalInput({
           {attachments.map((attachment) => (
             <PreviewAttachment key={attachment.url} attachment={attachment} />
           ))}
-
           {uploadQueue.map((filename) => (
             <PreviewAttachment
               key={filename}
