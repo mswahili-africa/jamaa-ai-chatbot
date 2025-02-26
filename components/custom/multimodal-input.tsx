@@ -83,6 +83,10 @@ export function MultimodalInput({
   };
 
   const uploadFileToS3 = async (file: File) => {
+    if (typeof window === "undefined") {
+      throw new Error("uploadFileToS3 can only be called on the client side.");
+    }
+    
     const params = {
       Bucket: "bantu-jamaa-ia-chatbot", // Replace with your bucket name
       Key: `uploads/${file.name}`, // Path where you want to store the file in the bucket
