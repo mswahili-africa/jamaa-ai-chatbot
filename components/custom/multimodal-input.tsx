@@ -1,11 +1,10 @@
 "use client";
 
-import AWS from "aws-sdk";
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
+import AWS from "aws-sdk";
 import { motion } from "framer-motion";
 import React, { useRef, useEffect, useState, useCallback, Dispatch, SetStateAction, ChangeEvent } from "react";
 import { toast } from "sonner";
-
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import useWindowSize from "./use-window-size";
