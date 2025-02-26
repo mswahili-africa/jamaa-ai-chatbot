@@ -1,7 +1,7 @@
 "use client";
 
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
-import AWS from "aws-sdk";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { motion } from "framer-motion";
 import React, { useRef, useEffect, useState, useCallback, Dispatch, SetStateAction, ChangeEvent } from "react";
 import { toast } from "sonner";
@@ -24,14 +24,14 @@ const suggestedActions = [
   },
 ];
 
-// Configure AWS S3
-AWS.config.update({
+// Configure AWS S3 Client
+const s3Client = new S3Client({
   region: "eu-west-1",
-  accessKeyId: process.env.ACCESS_KEY_ID_AWS,
-  secretAccessKey: process.env.SECRET_ACCESS_KEY_AWS,
+  credentials: {
+    accessKeyId: process.env.ACCESS_KEY_ID_AWS,
+    secretAccessKey: process.env.SECRET_ACCESS_KEY_AWS,
+  },
 });
-
-const s3 = new AWS.S3();
 
 export function MultimodalInput({
   input,
@@ -83,10 +83,6 @@ export function MultimodalInput({
   };
 
   const uploadFileToS3 = async (file: File) => {
-    if (typeof window === "undefined") {
-      throw new Error("uploadFileToS3 can only be called on the client side.");
-    }
-    
     const params = {
       Bucket: "bantu-jamaa-ia-chatbot", // Replace with your bucket name
       Key: `uploads/${file.name}`, // Path where you want to store the file in the bucket
@@ -95,9 +91,11 @@ export function MultimodalInput({
     };
 
     try {
-      const data = await s3.upload(params).promise();
+      const command = new PutObjectCommand(params);
+      await s3Client.send(command);
+
       return {
-        url: data.Location,
+        url: `https://${params.Bucket}.s3.eu-west-1.amazonaws.com/${params.Key}`,
         name: file.name,
         contentType: file.type,
       };
@@ -135,7 +133,7 @@ export function MultimodalInput({
       experimental_attachments: attachments,
     });
     setAttachments([]);
-    
+
     if (width && width > 768) {
       textareaRef.current?.focus();
     }
