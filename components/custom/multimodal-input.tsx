@@ -85,7 +85,7 @@ export function MultimodalInput({
 
   const uploadFileToS3 = async (file: File) => {
     const params = {
-      Bucket: "YOUR_BUCKET_NAME", // Replace with your bucket name
+      Bucket: "bantu-jamaa-ia-chatbot", // Replace with your bucket name
       Key: `uploads/${file.name}`, // Path where you want to store the file in the bucket
       Body: file,
       ContentType: file.type,
