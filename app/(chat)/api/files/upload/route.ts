@@ -11,7 +11,7 @@ const FileSchema = z.object({
       message: "File size should be less than 5MB",
     })
     .refine(
-      (file) =>
+      (file) => 
         ["image/jpeg", "image/png", "application/pdf"].includes(file.type),
       {
         message: "File type should be JPEG, PNG, or PDF",
