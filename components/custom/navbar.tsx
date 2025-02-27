@@ -7,7 +7,7 @@ import { History } from "./history";
 import { SlashIcon } from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
-import {
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -24,16 +24,16 @@ export const Navbar = async () => {
           <History user={session?.user} />
           <div className="flex flex-row gap-2 items-center">
             <Image
-              src="/images/gemini-logo.png"
+              src="/images/bantu-logo.png"
               height={20}
               width={20}
-              alt="gemini logo"
+              alt="bantu jamaa logo"
             />
             <div className="text-zinc-500">
               <SlashIcon size={16} />
             </div>
             <div className="text-sm dark:text-zinc-300 truncate w-28 md:w-fit">
-              Next.js Gemini Chatbot
+              Jamaa Chatbot
             </div>
           </div>
         </div>
