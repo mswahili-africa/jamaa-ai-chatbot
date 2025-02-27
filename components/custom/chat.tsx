@@ -47,7 +47,7 @@ export function Chat({
               key={message.id}
               chatId={id}
               role={message.role}
-              content={message.content}
+              content={message.content} // Pass the content as-is
               attachments={message.experimental_attachments}
               toolInvocations={message.toolInvocations}
             />

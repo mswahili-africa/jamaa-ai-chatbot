@@ -1,8 +1,8 @@
 "use client";
 
-import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
+import { ChatRequestOptions, CreateMessage, Message } from "ai";
 import { motion } from "framer-motion";
-import React, { useRef, useEffect, useState, useCallback, Dispatch, SetStateAction } from "react";
+import React, { useRef, useEffect, useCallback} from "react";
 import { toast } from "sonner";
 import { ArrowUpIcon, StopIcon } from "./icons";
 import { Button } from "../ui/button";
@@ -10,14 +10,14 @@ import { Textarea } from "../ui/textarea";
 
 const suggestedActions = [
   {
-    title: "Help me book a flight",
-    label: "from San Francisco to London",
-    action: "Help me book a flight from San Francisco to London",
+    title: "Nisaidie kuita usafiri",
+    label: "Huduma ya taxi mtandao",
+    action: "Nisaidie kuita usafiri wa taxi mtandao",
   },
   {
-    title: "What is the status",
-    label: "of flight BA142 flying tmrw?",
-    action: "What is the status of flight BA142 flying tmrw?",
+    title: "Nataka kununua",
+    label: "Kununua kitu mtandaoni",
+    action: "Nisaidie kutafuta kitu mtandaoni",
   },
 ];
 

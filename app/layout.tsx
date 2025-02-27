@@ -8,8 +8,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bantu.tz"),
-  title: "Jamaa Chatbot",
-  description: "Rafiki karibu yako",
+  title: "Jamaa",
+  description: "Rafiki yako",
 };
 
 export default async function RootLayout({
