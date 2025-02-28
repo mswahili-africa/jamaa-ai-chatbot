@@ -37,4 +37,5 @@ export const authConfig = {
       return true;
     },
   },
+  secret: process.env.AUTH_SECRET // To be added
 } satisfies NextAuthConfig;
