@@ -3,7 +3,7 @@
 import { Attachment, ToolInvocation } from "ai";
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
-
+import Image from 'next/image';
 import { BotIcon, UserIcon } from "./icons";
 import { Markdown } from "./markdown";
 import { PreviewAttachment } from "./preview-attachment";
@@ -72,41 +72,43 @@ export const Message = ({
           </div>
         )}
 
-        {isStructuredData && structuredData && (
-          <div className="w-full">
-            <p className="text-sm text-gray-600 mb-4">{structuredData.message}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {structuredData.results.map((result) => (
-                <div
-                  key={result.id}
-                  className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => {
-                    // Handle click (e.g., navigate to product details)
-                    console.log("Clicked on:", result.title);
-                  }}
-                >
-                  <img
-                    src={result.imageUrl}
-                    alt={result.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg">{result.title}</h3>
-                    <p className="text-sm text-gray-600">{result.description}</p>
-                    <p className="text-sm font-bold mt-2">{result.price}</p>
-                    <p className="text-sm text-gray-600">
-                      Condition: {result.condition}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Deliverable: {result.deliverable ? "Yes" : "No"}
-                    </p>
-                    <p className="text-sm text-gray-600">Shop: {result.shopName}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+{isStructuredData && structuredData && (
+  <div className="w-full">
+    <p className="text-sm text-gray-600 mb-4">{structuredData.message}</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {structuredData.results.map((result) => (
+        <div
+          key={result.id}
+          className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => {
+            // Handle click (e.g., navigate to product details)
+            console.log("Clicked on:", result.title);
+          }}
+        >
+          <Image
+            src={result.imageUrl}
+            alt={result.title}
+            width={300} // Set the width of the image
+            height={200} // Set the height of the image
+            className="w-full h-48 object-cover"
+          />
+          <div className="p-4">
+            <h3 className="font-semibold text-lg">{result.title}</h3>
+            <p className="text-sm text-gray-600">{result.description}</p>
+            <p className="text-sm font-bold mt-2">{result.price}</p>
+            <p className="text-sm text-gray-600">
+              Condition: {result.condition}
+            </p>
+            <p className="text-sm text-gray-600">
+              Deliverable: {result.deliverable ? "Yes" : "No"}
+            </p>
+            <p className="text-sm text-gray-600">Shop: {result.shopName}</p>
           </div>
-        )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
         {toolInvocations && (
           <div className="flex flex-col gap-4">
