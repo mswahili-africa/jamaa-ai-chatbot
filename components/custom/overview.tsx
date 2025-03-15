@@ -18,7 +18,7 @@ export const Overview = () => {
           <MessageIcon />
         </p>
         <p>
-          Naitwa ni Jamaa. Rafiki yako wa karibu. Kwa ajili ya kukusaidia kununua kitu kiurahisi mtandaoni au kuita usafiri kupitia {" "}
+          Naitwa ni Jamaa. Rafiki yako wa karibu. Kwa ajili ya kukusaidia kutafuta kitu kiurahisi kwenye Soko la {" "}
           <code className="rounded-sm bg-muted-foreground/15 px-1.5 py-0.5">
             Bantu
           </code>{" "}

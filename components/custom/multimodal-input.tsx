@@ -10,14 +10,14 @@ import { Textarea } from "../ui/textarea";
 
 const suggestedActions = [
   {
-    title: "Nisaidie kuita usafiri",
-    label: "Huduma ya taxi mtandao",
-    action: "Nisaidie kuita usafiri wa taxi mtandao",
+    title: "Bidhaa na Huduma",
+    label: "Tafuta bidhaa au huduma",
+    action: "Nataka kununua kitu kwenye Bantu soko?",
   },
   {
-    title: "Nataka kununua",
-    label: "Kununua kitu mtandaoni",
-    action: "Nisaidie kutafuta kitu mtandaoni",
+    title: "Matukio",
+    label: "Msaada wa kutafuta matukio",
+    action: "Kuna matukio gani wiki hii kwenye Bantu soko?",
   },
 ];
 

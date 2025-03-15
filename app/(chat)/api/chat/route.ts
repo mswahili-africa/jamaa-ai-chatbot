@@ -169,7 +169,7 @@ ${result.description}
 **Price:** ${result.price}  
 **address:** ${result.address}  
 **Type:** ${result.eventType}  
-**Shop:** ${result.shopName}  
+**Orgniser:** ${result.plannerInfo}  
 ![Thumbnail](${result.imageUrl})  
 `
             )
