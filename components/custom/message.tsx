@@ -49,10 +49,10 @@ export const Message = ({
   // Parse the structured data if it exists
   const structuredData = isStructuredData
     ? (JSON.parse(content) as {
-        results: SearchResult[];
-        message: string;
-        displayType: string;
-      })
+      results: SearchResult[];
+      message: string;
+      displayType: string;
+    })
     : null;
 
   return (
@@ -72,101 +72,46 @@ export const Message = ({
           </div>
         )}
 
-{isStructuredData && structuredData && (
-  <div className="w-full">
-    <p className="text-sm text-gray-600 mb-4">{structuredData.message}</p>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {structuredData.results.map((result) => (
-        <div
-          key={result.id}
-          className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => {
-            // Handle click (e.g., navigate to product details)
-            console.log("Clicked on:", result.title);
-          }}
-        >
-          <Image
-            src={result.imageUrl}
-            alt={result.title}
-            width={300} // Set the width of the image
-            height={200} // Set the height of the image
-            className="w-full h-48 object-cover"
-          />
-          <div className="p-4">
-            <h3 className="font-semibold text-lg">{result.title}</h3>
-            <p className="text-sm text-gray-600">{result.description}</p>
-            <p className="text-sm font-bold mt-2">{result.price}</p>
-            <p className="text-sm text-gray-600">
-              Condition: {result.condition}
-            </p>
-            <p className="text-sm text-gray-600">
-              Deliverable: {result.deliverable ? "Yes" : "No"}
-            </p>
-            <p className="text-sm text-gray-600">Shop: {result.shopName}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+        {isStructuredData && structuredData && (
+          <div className="w-full">
+            <p className="text-sm text-gray-600 mb-4">{structuredData.message}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {structuredData.results.map((result) => (
+                <div
+                  key={result.id}
+                  className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    // Handle click (e.g., navigate to product details)
+                    console.log("Clicked on:", result.title);
+                  }}
+                >
+                  <Image
+                    src={result.imageUrl}
+                    alt={result.title}
+                    width={300}
+                    height={200}
+                    className="w-full h-48 object-cover"
+                    unoptimized
+                  />
 
-        {toolInvocations && (
-          <div className="flex flex-col gap-4">
-            {toolInvocations.map((toolInvocation) => {
-              const { toolName, toolCallId, state } = toolInvocation;
-
-              if (state === "result") {
-                const { result } = toolInvocation;
-
-                return (
-                  <div key={toolCallId}>
-                    {toolName === "getWeather" ? (
-                      <Weather weatherAtLocation={result} />
-                    ) : toolName === "displayFlightStatus" ? (
-                      <FlightStatus flightStatus={result} />
-                    ) : toolName === "searchFlights" ? (
-                      <ListFlights chatId={chatId} results={result} />
-                    ) : toolName === "selectSeats" ? (
-                      <SelectSeats chatId={chatId} availability={result} />
-                    ) : toolName === "createReservation" ? (
-                      Object.keys(result).includes("error") ? null : (
-                        <CreateReservation reservation={result} />
-                      )
-                    ) : toolName === "authorizePayment" ? (
-                      <AuthorizePayment intent={result} />
-                    ) : toolName === "displayBoardingPass" ? (
-                      <DisplayBoardingPass boardingPass={result} />
-                    ) : toolName === "verifyPayment" ? (
-                      <VerifyPayment result={result} />
-                    ) : (
-                      <div>{JSON.stringify(result, null, 2)}</div>
-                    )}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg">{result.title}</h3>
+                    <p className="text-sm text-gray-600">{result.description}</p>
+                    <p className="text-sm font-bold mt-2">{result.price}</p>
+                    <p className="text-sm text-gray-600">
+                      Condition: {result.condition}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Deliverable: {result.deliverable ? "Yes" : "No"}
+                    </p>
+                    <p className="text-sm text-gray-600">Shop: {result.shopName}</p>
                   </div>
-                );
-              } else {
-                return (
-                  <div key={toolCallId} className="skeleton">
-                    {toolName === "getWeather" ? (
-                      <Weather />
-                    ) : toolName === "displayFlightStatus" ? (
-                      <FlightStatus />
-                    ) : toolName === "searchFlights" ? (
-                      <ListFlights chatId={chatId} />
-                    ) : toolName === "selectSeats" ? (
-                      <SelectSeats chatId={chatId} />
-                    ) : toolName === "createReservation" ? (
-                      <CreateReservation />
-                    ) : toolName === "authorizePayment" ? (
-                      <AuthorizePayment />
-                    ) : toolName === "displayBoardingPass" ? (
-                      <DisplayBoardingPass />
-                    ) : null}
-                  </div>
-                );
-              }
-            })}
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
 
         {attachments && (
           <div className="flex flex-row gap-2">

@@ -1,8 +1,7 @@
 "use client";
 
-import { Attachment, Message } from "ai";
+import { Message } from "ai";
 import { useChat } from "ai/react";
-import { useState } from "react";
 
 import { Message as PreviewMessage } from "@/components/custom/message";
 import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
@@ -31,8 +30,6 @@ export function Chat({
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
-  const [attachments, setAttachments] = useState<Array<Attachment>>([]);
-
   return (
     <div className="flex flex-row justify-center pb-4 md:pb-8 h-dvh bg-background">
       <div className="flex flex-col justify-between items-center gap-4">
@@ -42,16 +39,18 @@ export function Chat({
         >
           {messages.length === 0 && <Overview />}
 
-          {messages.map((message) => (
-            <PreviewMessage
-              key={message.id}
-              chatId={id}
-              role={message.role}
-              content={message.content} // Pass the content as-is
-              attachments={message.experimental_attachments}
-              toolInvocations={message.toolInvocations}
-            />
-          ))}
+          {messages
+            .filter((message) => message.role !== "assistant" || !message.toolInvocations)
+            .map((message) => (
+              <PreviewMessage
+                key={message.id}
+                chatId={id}
+                role={message.role}
+                content={message.content}
+                attachments={message.experimental_attachments}
+                toolInvocations={message.toolInvocations}
+              />
+            ))}
 
           <div
             ref={messagesEndRef}
