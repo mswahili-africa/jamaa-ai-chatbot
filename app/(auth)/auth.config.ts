@@ -37,5 +37,5 @@ export const authConfig = {
       return true;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET // To be added
+  secret: "da3e1da59c612af2159807a2545cd37c"
 } satisfies NextAuthConfig;
