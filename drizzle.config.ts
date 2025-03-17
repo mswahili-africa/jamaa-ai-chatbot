@@ -10,6 +10,6 @@ export default defineConfig({
   out: "./lib/drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.POSTGRES_URL!,
+    url: "postgresql://postgres.nyzxtvrghxurxiutfpam:QDaGs3pMUKE9sNLj@@aws-0-eu-west-1.pooler.supabase.com:5432/postgres",
   },
 });

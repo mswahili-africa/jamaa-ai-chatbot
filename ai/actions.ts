@@ -1,10 +1,6 @@
-import { generateObject } from "ai";
-import { z } from "zod";
 import axios from "axios";
 
-import { geminiFlashModel } from ".";
-
-const BASE_URL = process.env.API_BASE_URL;
+const BASE_URL = "https://api.prod.bantu.tz";
 
 type Coordinates = [number, number];
 

@@ -33,7 +33,7 @@ type SearchResultEvents = {
 async function searchProductsAndServices({ query }: { query: string }): Promise<{ results: SearchResultProduct[] }> {
   try {
     // Call the API with the user's query
-    const response = await axios.get(`${process.env.API_BASE_URL}/advertisement/listing/list`, {
+    const response = await axios.get(`https://api.prod.bantu.tz/advertisement/listing/list`, {
       params: {
         title: query, // Pass the user's query as a query parameter
       },
@@ -64,7 +64,7 @@ async function searchProductsAndServices({ query }: { query: string }): Promise<
 async function searchEvents({ query }: { query: string }): Promise<{ results: SearchResultEvents[] }> {
   try {
     // Call the API with the user's query
-    const response = await axios.get(`${process.env.API_BASE_URL}/events/event/list`, {
+    const response = await axios.get(`https://api.prod.bantu.tz/events/event/list`, {
       params: {
         title: query, // Pass the user's query as a query parameter
       },

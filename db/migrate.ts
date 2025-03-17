@@ -8,11 +8,11 @@ config({
 });
 
 const runMigrate = async () => {
-  if (!process.env.POSTGRES_URL) {
-    throw new Error("POSTGRES_URL is not defined");
-  }
+  // if (!process.env.POSTGRES_URL) {
+  //   throw new Error("POSTGRES_URL is not defined");
+  // }
 
-  const connection = postgres(process.env.POSTGRES_URL, { max: 1 });
+  const connection = postgres("postgresql://postgres.nyzxtvrghxurxiutfpam:QDaGs3pMUKE9sNLj@@aws-0-eu-west-1.pooler.supabase.com:5432/postgres", { max: 1 });
   const db = drizzle(connection);
 
   console.log("⏳ Running migrations...");
