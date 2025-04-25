@@ -10,14 +10,14 @@ import { Textarea } from "../ui/textarea";
 
 const suggestedActions = [
   {
-    title: "Bidhaa na Huduma",
-    label: "Tafuta bidhaa au huduma",
-    action: "Nataka kununua kitu kwenye Bantu soko?",
+    title: "What is UCC",
+    label: "Know about UCC",
+    action: "What is UCC?",
   },
   {
-    title: "Matukio",
-    label: "Msaada wa kutafuta matukio",
-    action: "Kuna matukio gani wiki hii kwenye Bantu soko?",
+    title: "Programs in UCC",
+    label: "What are available programs in UCC?",
+    action: "What are available programs in UCC?",
   },
 ];
 

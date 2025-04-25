@@ -24,16 +24,16 @@ export const Navbar = async () => {
           <History user={session?.user} />
           <div className="flex flex-row gap-2 items-center">
             <Image
-              src="/images/bantu-logo.png"
+              src="/images/ucc-logo.png"
               height={20}
               width={20}
-              alt="bantu jamaa logo"
+              alt="UCC Helpdesk logo"
             />
             <div className="text-zinc-500">
               <SlashIcon size={16} />
             </div>
             <div className="text-sm dark:text-zinc-300 truncate w-28 md:w-fit">
-              Jamaa
+              UCC Helpdesk
             </div>
           </div>
         </div>

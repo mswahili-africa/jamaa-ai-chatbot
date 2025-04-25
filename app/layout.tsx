@@ -7,9 +7,9 @@ import { ThemeProvider } from "@/components/custom/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bantu.tz"),
-  title: "Jamaa",
-  description: "Rafiki yako",
+  metadataBase: new URL("https://ucc.co.tz"),
+  title: "UCC Helpdesk",
+  description: "Your Assistant",
 };
 
 export default async function RootLayout({

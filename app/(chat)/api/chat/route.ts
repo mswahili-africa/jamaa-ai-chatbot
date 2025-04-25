@@ -1,237 +1,122 @@
 import { convertToCoreMessages, Message, streamText } from "ai";
 import { z } from "zod";
-import axios from "axios";
-
+import { extractPDFTextFromFile } from "@/lib/pdf-utils";
 import { geminiProModel } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { deleteChatById, getChatById, saveChat } from "@/db/queries";
+import { formatUCCResponse,findBestMatch } from '@/lib/response-utils';
 
-// Define the SearchResult type
-type SearchResultProduct = {
-  id: string;
-  title: string;
-  description: string;
-  price: string;
-  imageUrl: string;
-  condition: string;
-  deliverable: boolean;
-  shopName: string;
-};
+// Disable static optimization
+export const dynamic = "force-dynamic";
+export const maxDuration = 30; // 30s timeout
 
-type SearchResultEvents = {
-  id: string;
-  title: string;
-  description: string;
-  eventType: string;
-  imageUrl: string;
-  dateTime: string;
-  address: string;
-  price: string;
-  plannerInfo: string;
-};
+function extractRelevantSection(text: string, query: string): string {
+  // Implement smart extraction:
+  const keywords = {
+    'computing': 'COMPUTING PROGRAMS SECTION',
+    'business': 'BUSINESS SCHOOL SECTION',
+    'fees': 'TUITION AND FEES SECTION'
+  };
 
-async function searchProductsAndServices({ query }: { query: string }): Promise<{ results: SearchResultProduct[] }> {
-  try {
-    // Call the API with the user's query
-    const response = await axios.get(`https://api.prod.bantu.tz/advertisement/listing/list`, {
-      params: {
-        title: query, // Pass the user's query as a query parameter
-      },
-    });
-
-    // Extract the content from the response
-    const advertisements = response.data.content;
-
-    // Map the API response to the desired format
-    const SearchResultProduct: SearchResultProduct[] = advertisements.map((ad: any) => ({
-      id: ad.id,
-      title: ad.title,
-      description: ad.description,
-      price: `${ad.price} ${ad.currency}`,
-      imageUrl: ad.imageUrl[0], // Use the first image as the thumbnail
-      condition: ad.condition,
-      deliverable: ad.deliverable,
-      shopName: ad.shopInfo.name,
-    }));
-
-    return { results: SearchResultProduct };
-  } catch (error) {
-    console.error("Failed to fetch advertisements:", error);
-    throw new Error("Failed to search products and services");
-  }
-}
-
-async function searchEvents({ query }: { query: string }): Promise<{ results: SearchResultEvents[] }> {
-  try {
-    // Call the API with the user's query
-    const response = await axios.get(`https://api.prod.bantu.tz/events/event/list`, {
-      params: {
-        title: query, // Pass the user's query as a query parameter
-      },
-    });
-
-    // Extract the content from the response
-    const events = response.data.content;
-
-    // Map the API response to the desired format
-    const SearchResultEvents: SearchResultEvents[] = events.map((ad: any) => ({
-      id: ad.id,
-      title: ad.title,
-      description: ad.description,
-      eventType: ad.eventType,
-      price: `${ad.price} ${ad.currency}`,
-      imageUrl: ad.imageUrl[0], // Use the first image as the thumbnail
-      plannerInfo: ad.plannerInfo.name,
-    }));
-
-    return { results: SearchResultEvents };
-  } catch (error) {
-    console.error("Failed to fetch events:", error);
-    throw new Error("Failed to search Events");
-  }
+  const section = findBestMatch(text, query, keywords);
+  return section || 'General information about UCC programs';
 }
 
 export async function POST(request: Request) {
-  const currentDate = new Date().toLocaleDateString();
+  try {
+    const { id, messages }: { id: string; messages: Array<Message> } =
+      await request.json();
 
-  const { id, messages }: { id: string; messages: Array<Message> } =
-    await request.json();
+    const session = await auth();
+    if (!session) return new Response("Unauthorized", { status: 401 });
 
-  const session = await auth();
+    const coreMessages = convertToCoreMessages(messages)
+      .filter(message => message.content.length > 0);
 
-  if (!session) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+    const result = await streamText({
+      model: geminiProModel,
+      system: `
+You are the official UCC (University of Computing Center) Helpdesk assistant. Follow these rules strictly:
 
-  const coreMessages = convertToCoreMessages(messages).filter(
-    (message) => message.content.length > 0
-  );
+1. Identity:
+- Always respond as "UCC Helpdesk"
+- Never mention you're an AI
 
-  const result = await streamText({
-    model: geminiProModel,
-    system: `
-      - Today's date is ${currentDate}.
-      - Don't mention you are from Google but from Bantu Soko
-      - You help people find products, services and events within Bantu Soko
-      - Your name is Jamaa.
-      - Bantu Soko created you
-      - You speak only Swahili and English.
-      - You are from Tanzania.
-      - Keep your responses concise.
-      - Show images of proposed listings.
-      - Dont show raw data from APIs like structured or unstructured data
-    `,
-    messages: coreMessages,
-    tools: {
-      searchProductsAndServices: {
-        description: "Search for products or services based on the user's query",
-        parameters: z.object({
-          query: z.string().describe("The user's search query"),
-        }),
-        execute: async ({ query }) => {
-          const searchResults = await searchProductsAndServices({ query });
+2. Content Rules:
+- Only answer about UCC programs/services
+- For program queries, ALWAYS include:
+  • Duration (e.g., "2 years full-time")
+  • Core modules (3-5 key subjects)
+  • Entry requirements (minimum qualifications)
+  • Career prospects (2-3 job roles)
 
-          // Format the results for display
-          const formattedMessage = searchResults.results
-            .map(
-              (result: SearchResultProduct) => `
-**${result.title}**  
-${result.description}  
-**Price:** ${result.price}  
-**Condition:** ${result.condition}  
-**Deliverable:** ${result.deliverable ? "Yes" : "No"}  
-**Shop:** ${result.shopName}  
-![Thumbnail](${result.imageUrl})  
-`
-            )
-            .join("\n\n");
-
-          return {
-            results: searchResults.results,
-            message: `Here are the search results for "${query}":\n\n${formattedMessage}`,
-          };
-        },
+3. Style:
+- Use professional but friendly tone
+- Format clearly with bullet points when listing
+`,
+      messages: coreMessages,
+      tools: {
+        searchPDF: {
+          description: "Search UCC prospectus PDF",
+          parameters: z.object({
+            query: z.string().describe("Question about UCC")
+          }),
+          execute: async ({ query }) => {
+            try {
+              const pdfText = await extractPDFTextFromFile("prospectus.pdf");
+              if (!pdfText) throw new Error();
+              
+              return {
+                message: formatUCCResponse(pdfText, query)
+              };
+            } catch {
+              return {
+                message: "UCC Helpdesk is currently updating our program records. " +
+                         "Please visit https://ucc.co.tz/programs for latest information."
+              };
+            }
+          }
+        }
       },
-      searchEvents: {
-        description: "Search for events based on the user's query",
-        parameters: z.object({
-          query: z.string().describe("The user's search query"),
-        }),
-        execute: async ({ query }) => {
-          const searchResults = await searchEvents({ query });
-
-          // Format the results for display
-          const formattedMessage = searchResults.results
-            .map(
-              (result: SearchResultEvents) => `
-**${result.title}**  
-${result.description}  
-**Price:** ${result.price}  
-**address:** ${result.address}  
-**Type:** ${result.eventType}  
-**Orgniser:** ${result.plannerInfo}  
-![Thumbnail](${result.imageUrl})  
-`
-            )
-            .join("\n\n");
-
-          return {
-            results: searchResults.results,
-            message: `Here are the search results for "${query}":\n\n${formattedMessage}`,
-          };
-        },
-      },
-    },
-    onFinish: async ({ responseMessages }) => {
-      if (session.user && session.user.id) {
-        try {
-          // Save the chat (if needed)
+      onFinish: async ({ responseMessages }) => {
+        if (session.user?.id) {
           await saveChat({
             id,
             messages: [...coreMessages, ...responseMessages],
             userId: session.user.id,
-          });
-        } catch (error) {
-          console.error("Failed to save chat");
+          }).catch(error => console.error("Chat save failed:", error));
         }
       }
-    },
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: "stream-text",
-    },
-  });
+    });
 
-  return result.toDataStreamResponse({});
+    return result.toDataStreamResponse({});
+  } catch (error) {
+    console.error("Chat endpoint error:", error);
+    return new Response("Service unavailable. Please try again later.", {
+      status: 503
+    });
+  }
 }
 
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return new Response("Not Found", { status: 404 });
-  }
-
-  const session = await auth();
-
-  if (!session || !session.user) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
   try {
-    const chat = await getChatById({ id });
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const session = await auth();
 
+    if (!id) return new Response("Not Found", { status: 404 });
+    if (!session?.user) return new Response("Unauthorized", { status: 401 });
+
+    const chat = await getChatById({ id });
     if (chat.userId !== session.user.id) {
-      return new Response("Unauthorized", { status: 401 });
+      return new Response("Unauthorized", { status: 403 });
     }
 
     await deleteChatById({ id });
-
     return new Response("Chat deleted", { status: 200 });
+
   } catch (error) {
-    return new Response("An error occurred while processing your request", {
-      status: 500,
-    });
+    console.error("Delete error:", error);
+    return new Response("Processing error", { status: 500 });
   }
 }
